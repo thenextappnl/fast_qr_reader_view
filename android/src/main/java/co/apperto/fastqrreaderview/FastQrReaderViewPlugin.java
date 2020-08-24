@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
+import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -294,6 +295,14 @@ public class FastQrReaderViewPlugin implements MethodCallHandler, PluginRegistry
             case "toggleFlash":
                 toggleFlash(result);
                 break;
+            case "zoom":
+                double step = call.argument("step");
+                zoom(result, (int)step);
+                break;
+            case "maxZoom":
+                float maxZoom = camera.cameraSource.getMaxZoom();
+                result.success((int)maxZoom);
+                break;
             case "dispose": {
                 if (camera != null) {
                     camera.dispose();
@@ -422,6 +431,10 @@ public class FastQrReaderViewPlugin implements MethodCallHandler, PluginRegistry
         camera.cameraSource.toggleFlash();
     }
 
+    public void zoom(@NonNull Result result, int step) {
+        camera.cameraSource.setZoom(step);
+        result.success(null);
+    }
 
     private class QrReader {
 

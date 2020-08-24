@@ -214,6 +214,39 @@ AVCaptureMetadataOutputObjectsDelegate>
     }
 }
 
+- (void)zoom:(double)zoom {
+
+    NSError *error = nil;
+
+    if(_captureDevice == nil){
+        return;
+    }
+
+    if (![_captureDevice lockForConfiguration:&error]) {
+        return;
+    }
+
+    float maxZoom = _captureDevice.activeFormat.videoMaxZoomFactor;
+
+    if(zoom > maxZoom){
+        _captureDevice.videoZoomFactor = maxZoom;
+    } else {
+        _captureDevice.videoZoomFactor = (float) zoom;
+    }
+
+
+    [_captureDevice unlockForConfiguration];
+}
+
+- (int)getMaxZoom {
+    if(_captureDevice == nil){
+        return -1;
+    }
+
+    return (int)_captureDevice.activeFormat.videoMaxZoomFactor;
+}
+
+
 - (void)startScanning:(FlutterResult)result {
     // Added this delay to avoid encountering race condition
     double delayInSeconds = 0.1;
@@ -419,6 +452,13 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
         } else {
             result(@"unknown");
         }
+    } else if ([@"zoom" isEqualToString:call.method]){
+      NSNumber *step = call.arguments[@"step"];
+      [_camera zoom:[step doubleValue]];
+      result(nil);
+    } else if ([@"maxZoom" isEqualToString:call.method]){
+      int maxZoom = [_camera getMaxZoom];
+      result(@(maxZoom));
     } else {
         NSDictionary *argsMap = call.arguments;
         NSUInteger textureId = ((NSNumber *)argsMap[@"textureId"]).unsignedIntegerValue;

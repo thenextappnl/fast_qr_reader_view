@@ -361,6 +361,20 @@ class QRReaderController extends ValueNotifier<QRReaderValue> {
     }
   }
 
+  ///
+  /// change zoom by specific [step].
+  ///
+  Future<void> zoom(double step) async {
+    await _channel.invokeMethod<void>('zoom', <String, dynamic>{'step': step});
+  }
+
+  ///
+  /// get max zoom.
+  ///
+  Future<int> maxZoom() async {
+    return await _channel.invokeMethod<int>('maxZoom');
+  }
+
   /// Start a QR scan.
   ///
   /// Throws a [QRReaderException] if the capture fails.

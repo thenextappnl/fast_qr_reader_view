@@ -290,6 +290,30 @@ public class CameraSource {
     camera.startPreview();
   }
 
+  @SuppressLint("MissingPermission")
+  @RequiresPermission(Manifest.permission.CAMERA)
+  public void setZoom(int zoom) {
+    Camera.Parameters params = camera.getParameters();
+    if (params.isZoomSupported()) {
+      int maxZoom = params.getMaxZoom();
+      if (zoom <= maxZoom) {
+        params.setZoom(zoom);
+      }
+      camera.setParameters(params);
+    }
+
+  }
+
+  @SuppressLint("MissingPermission")
+  @RequiresPermission(Manifest.permission.CAMERA)
+  public int getMaxZoom() {
+    if (camera != null){
+      Camera.Parameters p = camera.getParameters();
+      return p.getMaxZoom();
+    }
+    return -1;
+  }
+
   /**
    * Returns the selected camera; one of {@link #CAMERA_FACING_BACK} or {@link
    * #CAMERA_FACING_FRONT}.
