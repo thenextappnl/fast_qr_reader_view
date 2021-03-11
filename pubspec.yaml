@@ -4,6 +4,8 @@ version: 0.1.7
 author: Facundo Medica <facundolmedica@gmail.com>
 homepage: https://github.com/facundomedica/fast_qr_reader_view
 
+publish_to: none
+
 dependencies:
   flutter:
     sdk: flutter
@@ -20,6 +22,7 @@ flutter:
   plugin:
     androidPackage: co.apperto.fastqrreaderview
     pluginClass: FastQrReaderViewPlugin
+
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
   #  - images/a_dot_burr.jpeg
