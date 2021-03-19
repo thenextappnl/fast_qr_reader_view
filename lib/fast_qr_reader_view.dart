@@ -37,11 +37,11 @@ String serializeResolutionPreset(ResolutionPreset resolutionPreset) {
     case ResolutionPreset.low:
       return 'low';
   }
-  throw new ArgumentError('Unknown ResolutionPreset value');
+  //throw new ArgumentError('Unknown ResolutionPreset value');
 }
 
-List<String> serializeCodeFormatsList(List<CodeFormat> formats) {
-  List<String> list = [];
+List<String?> serializeCodeFormatsList(List<CodeFormat> formats) {
+  List<String?> list = [];
 
   for (var i = 0; i < formats.length; i++) {
     if (_availableFormats[formats[i]] != null) {
@@ -53,7 +53,7 @@ List<String> serializeCodeFormatsList(List<CodeFormat> formats) {
   return list;
 }
 
-CameraLensDirection _parseCameraLensDirection(String string) {
+CameraLensDirection _parseCameraLensDirection(String? string) {
   switch (string) {
     case 'front':
       return CameraLensDirection.front;
@@ -70,8 +70,8 @@ CameraLensDirection _parseCameraLensDirection(String string) {
 /// May throw a [QRReaderException].
 Future<List<CameraDescription>> availableCameras() async {
   try {
-    final List<dynamic> cameras = await _channel.invokeMethod('availableCameras');
-    return cameras.map((dynamic camera) {
+    final List<dynamic>? cameras = await (_channel.invokeMethod<List<dynamic>>('availableCameras'));
+    return cameras!.map((dynamic camera) {
       return new CameraDescription(
         name: camera['name'],
         lensDirection: _parseCameraLensDirection(camera['lensFacing']),
@@ -88,10 +88,10 @@ Future<List<CameraDescription>> availableCameras() async {
 Future<PermissionStatus> checkCameraPermission() async {
   try {
     print("checkCameraPermission()");
-    var permission = await _channel.invokeMethod('checkPermission') as String;
+    var permission = await _channel.invokeMethod<String?>('checkPermission');
     print("Permission: $permission");
     return _getPermissionStatus(permission);
-  } on PlatformException catch (e) {
+  } on PlatformException catch (_) {
     print("Error while permissions");
     return Future.value(PermissionStatus.unknown);
   }
@@ -113,7 +113,7 @@ Future<PermissionStatus> requestCameraPermission() async {
       default:
         return PermissionStatus.unknown;
     }
-  } on PlatformException catch (e) {
+  } on PlatformException catch (_) {
     return Future.value(PermissionStatus.unknown);
   }
 }
@@ -122,7 +122,7 @@ Future<PermissionStatus> requestCameraPermission() async {
 ///
 /// Given a [String] status from the method channel, it returns a
 /// [PermissionStatus]
-PermissionStatus _getPermissionStatus(String status) {
+PermissionStatus _getPermissionStatus(String? status) {
   switch (status) {
     case "denied":
       return PermissionStatus.denied;
@@ -170,8 +170,8 @@ enum PermissionStatus {
 }
 
 class CameraDescription {
-  final String name;
-  final CameraLensDirection lensDirection;
+  final String? name;
+  final CameraLensDirection? lensDirection;
 
   CameraDescription({this.name, this.lensDirection});
 
@@ -194,7 +194,7 @@ class CameraDescription {
 /// This is thrown when the plugin reports an error.
 class QRReaderException implements Exception {
   String code;
-  String description;
+  String? description;
 
   QRReaderException(this.code, this.description);
 
@@ -204,30 +204,30 @@ class QRReaderException implements Exception {
 
 // Build the UI texture view of the video data with textureId.
 class QRReaderPreview extends StatelessWidget {
-  final QRReaderController controller;
+  final QRReaderController? controller;
 
   const QRReaderPreview(this.controller);
 
   @override
   Widget build(BuildContext context) {
-    return controller.value.isInitialized ? new Texture(textureId: controller._textureId) : new Container();
+    return controller!.value.isInitialized! ? new Texture(textureId: controller!._textureId!) : new Container();
   }
 }
 
 /// The state of a [QRReaderController].
 class QRReaderValue {
   /// True after [QRReaderController.initialize] has completed successfully.
-  final bool isInitialized;
+  final bool? isInitialized;
 
   /// True when the camera is scanning.
-  final bool isScanning;
+  final bool? isScanning;
 
-  final String errorDescription;
+  final String? errorDescription;
 
   /// The size of the preview in pixels.
   ///
   /// Is `null` until  [isInitialized] is `true`.
-  final Size previewSize;
+  final Size? previewSize;
 
   const QRReaderValue({
     this.isInitialized,
@@ -245,15 +245,15 @@ class QRReaderValue {
   /// Convenience getter for `previewSize.height / previewSize.width`.
   ///
   /// Can only be called when [initialize] is done.
-  double get aspectRatio => previewSize.height / previewSize.width;
+  double get aspectRatio => previewSize!.height / previewSize!.width;
 
   bool get hasError => errorDescription != null;
 
   QRReaderValue copyWith({
-    bool isInitialized,
-    bool isScanning,
-    String errorDescription,
-    Size previewSize,
+    bool? isInitialized,
+    bool? isScanning,
+    String? errorDescription,
+    Size? previewSize,
   }) {
     return new QRReaderValue(
       isInitialized: isInitialized ?? this.isInitialized,
@@ -286,10 +286,10 @@ class QRReaderController extends ValueNotifier<QRReaderValue> {
   final Function onCodeRead;
   final List<CodeFormat> codeFormats;
 
-  int _textureId;
+  int? _textureId;
   bool _isDisposed = false;
-  StreamSubscription<dynamic> _eventSubscription;
-  Completer<Null> _creatingCompleter;
+  StreamSubscription<dynamic>? _eventSubscription;
+  Completer<Null>? _creatingCompleter;
 
   QRReaderController(this.description, this.resolutionPreset, this.codeFormats, this.onCodeRead)
       : super(const QRReaderValue.uninitialized());
@@ -304,15 +304,15 @@ class QRReaderController extends ValueNotifier<QRReaderValue> {
     try {
       _channel.setMethodCallHandler(_handleMethod);
       _creatingCompleter = new Completer<Null>();
-      final Map<dynamic, dynamic> reply = await _channel.invokeMethod(
+      final Map<dynamic, dynamic>? reply = await (_channel.invokeMethod<Map<dynamic, dynamic>>(
         'initialize',
         <String, dynamic>{
           'cameraName': description.name,
           'resolutionPreset': serializeResolutionPreset(resolutionPreset),
           'codeFormats': serializeCodeFormatsList(codeFormats),
         },
-      );
-      _textureId = reply['textureId'];
+      ) );
+      _textureId = reply!['textureId'];
       value = value.copyWith(
         isInitialized: true,
         previewSize: new Size(
@@ -325,20 +325,20 @@ class QRReaderController extends ValueNotifier<QRReaderValue> {
     }
     _eventSubscription =
         new EventChannel('fast_qr_reader_view/cameraEvents$_textureId').receiveBroadcastStream().listen(_listener);
-    _creatingCompleter.complete(null);
-    return _creatingCompleter.future;
+    _creatingCompleter!.complete(null);
+    return _creatingCompleter!.future;
   }
 
   /// Listen to events from the native plugins.
   ///
   /// A "cameraClosing" event is sent when the camera is closed automatically by the system (for example when the app go to background). The plugin will try to reopen the camera automatically but any ongoing recording will end.
   void _listener(dynamic event) {
-    final Map<dynamic, dynamic> map = event;
+    final Map<dynamic, dynamic>? map = event;
     if (_isDisposed) {
       return;
     }
 
-    switch (map['eventType']) {
+    switch (map!['eventType']) {
       case 'error':
         value = value.copyWith(errorDescription: event['errorDescription']);
         break;
@@ -371,7 +371,7 @@ class QRReaderController extends ValueNotifier<QRReaderValue> {
   ///
   /// get max zoom.
   ///
-  Future<int> maxZoom() async {
+  Future<int?> maxZoom() async {
     return await _channel.invokeMethod<int>('maxZoom');
   }
 
@@ -379,13 +379,13 @@ class QRReaderController extends ValueNotifier<QRReaderValue> {
   ///
   /// Throws a [QRReaderException] if the capture fails.
   Future<Null> startScanning() async {
-    if (!value.isInitialized || _isDisposed) {
+    if (!value.isInitialized! || _isDisposed) {
       throw new QRReaderException(
         'Uninitialized QRReaderController',
         'startScanning was called on uninitialized QRReaderController',
       );
     }
-    if (value.isScanning) {
+    if (value.isScanning!) {
       throw new QRReaderException(
         'A scan has already started.',
         'startScanning was called when a recording is already started.',
@@ -404,13 +404,13 @@ class QRReaderController extends ValueNotifier<QRReaderValue> {
 
   /// Stop scanning.
   Future<Null> stopScanning() async {
-    if (!value.isInitialized || _isDisposed) {
+    if (!value.isInitialized! || _isDisposed) {
       throw new QRReaderException(
         'Uninitialized QRReaderController',
         'stopScanning was called on uninitialized QRReaderController',
       );
     }
-    if (!value.isScanning) {
+    if (!value.isScanning!) {
       throw new QRReaderException(
         'No scanning is happening',
         'stopScanning was called when the scanner was not scanning.',
@@ -438,7 +438,7 @@ class QRReaderController extends ValueNotifier<QRReaderValue> {
     if (_creatingCompleter == null) {
       return new Future<Null>.value(null);
     } else {
-      return _creatingCompleter.future.then((_) async {
+      return _creatingCompleter!.future.then((_) async {
         await _channel.invokeMethod(
           'dispose',
           <String, dynamic>{'textureId': _textureId},
@@ -451,7 +451,7 @@ class QRReaderController extends ValueNotifier<QRReaderValue> {
   Future<dynamic> _handleMethod(MethodCall call) async {
     switch (call.method) {
       case "updateCode":
-        if (value.isScanning) {
+        if (value.isScanning!) {
           onCodeRead(call.arguments);
           value = value.copyWith(isScanning: false);
         }
@@ -460,8 +460,8 @@ class QRReaderController extends ValueNotifier<QRReaderValue> {
 }
 
 class FastQrReaderView {
-  static Future<String> get platformVersion async {
-    final String version = await _channel.invokeMethod('getPlatformVersion');
+  static Future<String?> get platformVersion async {
+    final String? version = await _channel.invokeMethod('getPlatformVersion');
     return version;
   }
 }
